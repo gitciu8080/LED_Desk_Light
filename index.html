@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>LED 屏幕台灯</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* ======== 液态玻璃主题 ======== */
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
+  background-size: 400% 400%;
+  animation: bgShift 15s ease infinite;
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+@keyframes bgShift {
+  0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%}
+}
+
+/* 玻璃卡片 */
+.glass {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08);
+  padding: 18px;
+  margin-bottom: 14px;
+  color: #eee;
+}
+.glass h2, .glass .form-label {
+  color: rgba(255,255,255,.85);
+}
+.glass input[type=range] {
+  accent-color: #7c83ff;
+}
+.glass .text-muted { color: rgba(255,255,255,.5) !important; }
+.glass .badge { background: rgba(124,131,255,.25) !important; color: #c4c9ff !important; }
+
+/* 顶部 */
+.header-icon { font-size: 2.2rem; filter: drop-shadow(0 0 12px rgba(255,200,100,.5)); }
+h5 { color: #fff; text-shadow: 0 0 20px rgba(124,131,255,.4); }
+.subtitle { color: rgba(255,255,255,.5); }
+
+/* 连接栏 */
+.input-group input {
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  color: #fff !important;
+}
+.input-group input::placeholder { color: rgba(255,255,255,.35); }
+.input-group .input-group-text {
+  background: rgba(255,255,255,.1) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  color: rgba(255,255,255,.6) !important;
+}
+.input-group .btn-primary {
+  border-radius: 8px;
+  background: rgba(124,131,255,.3) !important;
+  border: 1px solid rgba(124,131,255,.4) !important;
+}
+.input-group .btn-primary:hover { background: rgba(124,131,255,.5) !important; }
+.input-group > * { border-radius: 8px !important; }
+
+/* 色温条 */
+.ct-bar {
+  height: 32px; border-radius: 16px;
+  background: linear-gradient(to right, #ff8c00, #ffb347, #fff5e6, #e6f0ff, #87ceeb, #4682b4);
+  position: relative; cursor: pointer;
+  border-width: 2px 0;    /* 上下为2px，左右为0 */
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+}
+.ct-thumb {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #fff; border: 3px solid #7c83ff;
+  position: absolute; top: 0; transform: translate(-50%, 0);
+  pointer-events: none; box-shadow: 0 2px 10px rgba(124,131,255,.5);
+  transition: left .05s linear;
+}
+.ct-labels { display: flex; justify-content: space-between; font-size: .75rem; color: rgba(255,255,255,.5); margin-top: 2px; }
+
+/* 模式按钮 */
+.mode-btn {
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  color: rgba(255,255,255,.7) !important;
+  transition: all .2s;
+}
+.mode-btn:hover { background: rgba(255,255,255,.15) !important; }
+.mode-btn.active-mode {
+  background: rgba(124,131,255,.35) !important;
+  border-color: rgba(124,131,255,.6) !important;
+  color: #fff !important;
+  box-shadow: 0 0 16px rgba(124,131,255,.3);
+}
+
+/* RGB 颜色 */
+.form-control-color {
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  border-radius: 10px !important;
+}
+.preview-box {
+  width: 40px; height: 40px; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,.2);
+  transition: background .15s;
+}
+
+/* 预设 */
+.preset-btn {
+  border-radius: 10px;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.7) !important;
+  backdrop-filter: blur(6px);
+  transition: all .2s;
+}
+.preset-btn:hover { background: rgba(255,255,255,.12) !important; }
+.preset-btn.selected {
+  background: rgba(124,131,255,.25) !important;
+  border-color: rgba(124,131,255,.5) !important;
+  color: #fff !important;
+  box-shadow: 0 0 14px rgba(124,131,255,.25);
+}
+
+/* 状态徽章 */
+#status { font-size: .75rem; }
+#status.bg-success { background: rgba(40,167,69,.4) !important; color: #b7ebc0 !important; }
+#status.bg-danger { background: rgba(220,53,69,.4) !important; color: #f5c6cb !important; }
+#status.bg-secondary { background: rgba(108,117,125,.4) !important; color: #ced4da !important; }
+#status.bg-warning { background: rgba(255,193,7,.4) !important; color: #ffe69c !important; }
+
+/* range 全局 */
+input[type=range] { accent-color: #7c83ff; }
+
+/* card 覆盖 */
+.card { border: none !important; background: transparent !important; }
+.card-body { padding: 0 !important; }
+
+/* 标题 */
+.glass-title {
+  color: rgba(255,255,255,.85);
+  font-weight: 600;
+  font-size: .9rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* RGB 小标签 */
+.rgb-label { color: rgba(255,255,255,.6); font-weight: 600; }
+.r-label { color: #ff6b6b !important; }
+.g-label { color: #51cf66 !important; }
+.b-label { color: #7c83ff !important; }
+
+/* ======== 保留开关样式 ======== */
+.switch-wrap { display: flex; justify-content: center; margin-bottom: 1rem; }
+.switch {
+  display: block; background-color: black;
+  width: 100px; height: 130px;
+  box-shadow: 0 0 8px 1px rgba(0,0,0,0.2), 0 0 1px 1px black, inset 0 1px 1px -1px white, inset 0 0 1px 10px #47434c, inset 0 0 1px 15px black;
+  border-radius: 4px; padding: 14px; perspective: 500px; cursor: pointer;
+}
+.switch input { display: none; }
+.switch input:checked + .button { transform: translateZ(14px) rotateX(25deg); box-shadow: 0 -7px 14px #ff1818; }
+.switch input:checked + .button .light { animation: flicker 0.2s infinite 0.3s; }
+.switch input:checked + .button .shine { opacity: 1; }
+.switch input:checked + .button .shadow { opacity: 0; }
+.switch .button {
+  display: block; transition: all 0.3s cubic-bezier(1,0,1,1);
+  transform-origin: center center -14px; transform: translateZ(14px) rotateX(-25deg);
+  transform-style: preserve-3d; height: 100%; position: relative;
+  background: linear-gradient(#980000 0%, #6f0000 30%, #6f0000 70%, #980000 100%);
+}
+.switch .button::before {
+  content: ""; background: linear-gradient(rgba(255,255,255,0.8) 10%, rgba(255,255,255,0.3) 30%, #650000 75%, #320000) 50% 50%/97% 97%, #b10000;
+  background-repeat: no-repeat; width: 100%; height: 35px; transform-origin: top;
+  transform: rotateX(-90deg); position: absolute; top: 0;
+}
+.switch .button::after {
+  content: ""; background-image: linear-gradient(#650000, #320000);
+  width: 100%; height: 35px; transform-origin: top;
+  transform: translateY(35px) rotateX(-90deg); position: absolute; bottom: 0;
+  box-shadow: 0 35px 6px 0px black, 0 55px 14px 0px rgba(0,0,0,0.5);
+}
+.switch .light {
+  opacity: 0; animation: light-off 1s;
+  position: absolute; width: 100%; height: 100%;
+  background-image: radial-gradient(#ffc97e, #ff1818 40%, transparent 70%);
+}
+.switch .dots {
+  position: absolute; width: 100%; height: 100%;
+  background-image: radial-gradient(transparent 30%, rgba(101,0,0,0.7) 70%); background-size: 7px 7px;
+}
+.switch .characters {
+  position: absolute; width: 100%; height: 100%;
+  background: linear-gradient(white, white) 50% 20%/5% 20%, radial-gradient(circle, transparent 50%, white 52%, white 70%, transparent 72%) 50% 80%/33% 25%;
+  background-repeat: no-repeat;
+}
+.switch .shine {
+  transition: all 0.3s cubic-bezier(1,0,1,1); opacity: 0.3;
+  position: absolute; width: 100%; height: 100%;
+  background: linear-gradient(white, transparent 3%) 50% 50%/97% 97%, linear-gradient(rgba(255,255,255,0.5), transparent 50%, transparent 80%, rgba(255,255,255,0.5)) 50% 50%/97% 97%;
+  background-repeat: no-repeat;
+}
+.switch .shadow {
+  transition: all 0.3s cubic-bezier(1,0,1,1); opacity: 1;
+  position: absolute; width: 100%; height: 100%;
+  background: linear-gradient(transparent 70%, rgba(0,0,0,0.8)); background-repeat: no-repeat;
+}
+@keyframes flicker { 0%{opacity:1} 80%{opacity:0.8} 100%{opacity:1} }
+@keyframes light-off { 0%{opacity:1} 80%{opacity:0} }
+:root { --bs-body-bg: transparent; }
+.container { max-width: 540px; }
+</style>
+</head>
+<body>
+
+<div class="container py-3">
+
+  <!-- 头部 -->
+  <div class="text-center mb-3">
+    <h5 class="fw-bold mb-1">LED 屏幕台灯</h5>
+    <small class="subtitle">智能控制面板</small>
+  </div>
+
+  <!-- 连接栏 -->
+  <div class="input-group input-group-sm mb-3">
+    <span class="input-group-text">IP</span>
+    <input type="text" class="form-control" id="ip" value="10.10.102.15" placeholder="ESP32 IP">
+    <button class="btn btn-primary" onclick="doConnect()">连接</button>
+  </div>
+  <div class="text-center mb-3">
+    <span class="badge bg-secondary" id="status">未连接</span>
+  </div>
+
+  <!-- 电源 - Uiverse.io by Nawsome -->
+  <div class="switch-wrap">
+    <label class="switch" for="powerCheck">
+      <input type="checkbox" id="powerCheck" onchange="togglePower()">
+      <div class="button">
+        <div class="light"></div>
+        <div class="dots"></div>
+        <div class="characters"></div>
+        <div class="shine"></div>
+        <div class="shadow"></div>
+      </div>
+    </label>
+  </div>
+
+  <!-- 亮度 -->
+  <div class="glass">
+    <span class="glass-title">亮度</span>
+    <div class="d-flex align-items-center gap-2">
+      <small class="text-muted">1%</small>
+      <input type="range" class="form-range flex-grow-1" id="brightness" min="1" max="100" value="80" oninput="onSlider(this,'%')">
+      <small class="text-muted">100%</small>
+    </div>
+    <div class="text-center mt-1">
+      <span class="badge rounded-pill" id="brightnessVal">80%</span>
+    </div>
+  </div>
+
+  <!-- 色温拾取器 -->
+  <div class="glass">
+    <span class="glass-title">色温</span>
+      <div class="ct-bar" id="ctBar" onclick="onCtClick(event)" ontouchmove="onCtTouch(event)">
+        <div class="ct-thumb" id="ctThumb" style="left:50%"></div>
+      </div>
+      <div class="ct-labels">
+        <span>暖光 2700K</span><span>自然 4000K</span><span>冷光 6500K</span>
+      </div>
+      <div class="d-flex justify-content-between mt-2">
+        <button class="btn btn-sm btn-outline-warning mode-btn" id="modeWarm" onclick="setMode('warm')">仅暖光</button>
+        <button class="btn btn-sm btn-outline-secondary mode-btn" id="modeCold" onclick="setMode('cold')">仅冷光</button>
+        <button class="btn btn-sm btn-outline-primary mode-btn" id="modeMixed" onclick="setMode('mixed')">混合光</button>
+        <button class="btn btn-sm btn-outline-danger mode-btn" id="modeRgb" onclick="setMode('rgb')">RGB</button>
+        <button class="btn btn-sm mode-btn" id="modeOff" onclick="setMode('off')">关闭</button>
+      </div>
+  </div>
+
+  <!-- RGB 颜色 -->
+  <div class="glass">
+    <span class="glass-title">RGB 颜色</span>
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <input type="color" class="form-control form-control-color" id="colorPicker" value="#ff0000" oninput="onColorPicker()" style="width:48px;height:38px">
+        <div class="preview-box" id="preview" style="background:#ff0000"></div>
+        <button class="btn btn-sm mode-btn" onclick="setMode('rgb')">应用 RGB</button>
+      </div>
+      <div class="row g-2 small">
+        <div class="col-4">
+          <span class="rgb-label r-label">R</span>
+          <input type="range" class="form-range" id="rgbR" min="0" max="255" value="255" oninput="onSlider(this,'')">
+          <span class="badge" style="background:rgba(255,107,107,.25);color:#ff6b6b" id="rgbRVal">255</span>
+        </div>
+        <div class="col-4">
+          <span class="rgb-label g-label">G</span>
+          <input type="range" class="form-range" id="rgbG" min="0" max="255" value="0" oninput="onSlider(this,'')">
+          <span class="badge" style="background:rgba(81,207,102,.25);color:#51cf66" id="rgbGVal">0</span>
+        </div>
+        <div class="col-4">
+          <span class="rgb-label b-label">B</span>
+          <input type="range" class="form-range" id="rgbB" min="0" max="255" value="0" oninput="onSlider(this,'')">
+          <span class="badge" style="background:rgba(124,131,255,.25);color:#7c83ff" id="rgbBVal">0</span>
+        </div>
+      </div>
+  </div>
+
+  <!-- 预设 -->
+  <div class="glass">
+    <span class="glass-title">RGB 预设效果</span>
+    <div class="row g-2" id="presets"></div>
+  </div>
+
+</div>
+
+<script>
+// ==================== 配置 ====================
+var ESP_IP = localStorage.getItem('esp_ip') || '10.10.102.15';
+document.getElementById('ip').value = ESP_IP;
+
+var PRESETS = [
+  {name:'静态单色', desc:'纯色常亮'},
+  {name:'流水灯', desc:'光点依次前进'},
+  {name:'呼吸灯', desc:'亮度正弦渐变'},
+  {name:'彩虹循环', desc:'色相旋转'},
+  {name:'彩虹流水', desc:'彩虹带滚动'},
+  {name:'渐变交替', desc:'颜色来回擦除'},
+  {name:'流星', desc:'拖尾光点划过'},
+  {name:'闪烁', desc:'快节奏频闪'},
+  {name:'双色渐变', desc:'两色平滑过渡'},
+  {name:'派对灯', desc:'随机颜色跳动'}
+];
+
+var state = {power:0,brightness:80,warm:100,cold:100,rgb_r:255,rgb_g:0,rgb_b:0,mode:'off',preset:0};
+var connected = false;
+var polling = null;
+var ctDragging = false;
+
+// ==================== 预设按钮 ====================
+(function(){
+  var h = '';
+  PRESETS.forEach(function(p,i){
+    h += '<div class="col-6"><button class="btn btn-outline-secondary btn-sm w-100 text-start preset-btn" id="preset'+i+'" onclick="setPreset('+i+')"><span class="fw-semibold">'+p.name+'</span><br><small class="text-muted">'+p.desc+'</small></button></div>';
+  });
+  document.getElementById('presets').innerHTML = h;
+})();
+
+// ==================== 色温拾取器 ====================
+var ctBar = document.getElementById('ctBar');
+var ctThumb = document.getElementById('ctThumb');
+
+function updateCtPos(clientX){
+  var rect = ctBar.getBoundingClientRect();
+  var barW = rect.width;
+  var thumbR = 14; // thumb 半径 px
+  var rawFrac = (clientX - rect.left) / barW;
+  var colorFrac = Math.max(0, Math.min(1, rawFrac));
+  var displayFrac = Math.max(thumbR / barW, Math.min(1 - thumbR / barW, rawFrac));
+  ctThumb.style.left = (displayFrac * 100) + '%';
+
+  // 色温计算：左半段 warm=100/cold渐变，右半段 cold=100/warm渐变
+  if(colorFrac < 0.5){
+    state.warm = 100;
+    state.cold = Math.round(colorFrac * 2 * 100);
+  } else {
+    state.warm = Math.round((1 - colorFrac) * 2 * 100);
+    state.cold = 100;
+  }
+  state.mode = 'mixed';
+  state.power = 1;
+  debounceSendSliders();
+}
+
+function onCtClick(e){ updateCtPos(e.clientX); }
+function onCtTouch(e){ e.preventDefault(); updateCtPos(e.touches[0].clientX); }
+
+// 触摸拖动
+ctBar.addEventListener('touchstart', function(e){ ctDragging=true; onCtTouch(e); });
+ctBar.addEventListener('touchmove', function(e){ if(ctDragging) onCtTouch(e); });
+ctBar.addEventListener('touchend', function(){ ctDragging=false; });
+ctBar.addEventListener('mousedown', function(e){ ctDragging=true; updateCtPos(e.clientX); });
+document.addEventListener('mousemove', function(e){ if(ctDragging){ updateCtPos(e.clientX); } });
+document.addEventListener('mouseup', function(){ ctDragging=false; });
+
+// ==================== 连接 ====================
+function doConnect(){
+  ESP_IP = document.getElementById('ip').value.trim();
+  localStorage.setItem('esp_ip', ESP_IP);
+  setStatus('bg-warning text-dark','连接中...');
+  fetchState()
+    .then(function(){
+      connected = true;
+      setStatus('bg-success','已连接 ' + ESP_IP);
+      startPolling();
+    })
+    .catch(function(){
+      connected = false;
+      setStatus('bg-danger','连接失败');
+    });
+}
+
+function fetchState(){
+  return fetch('http://'+ESP_IP+'/api/state')
+    .then(function(r){return r.json()})
+    .then(updateUI);
+}
+
+function startPolling(){
+  if(polling) clearInterval(polling);
+  polling = setInterval(function(){
+    if(connected) fetchState().catch(function(){});
+  }, 2000);
+}
+
+function setStatus(cls, msg){
+  var el = document.getElementById('status');
+  el.className = 'badge ' + cls;
+  el.textContent = msg;
+}
+
+// ==================== UI 更新 ====================
+function updateUI(s){
+  if(!s) return;
+  state = s;
+
+  document.getElementById('powerCheck').checked = s.power;
+
+  document.getElementById('brightness').value = s.brightness;
+  document.getElementById('brightnessVal').textContent = s.brightness + '%';
+
+  // 色温拾取器位置
+  var frac;
+  if(s.warm>=100 && s.cold<=100) frac = s.cold / 200;
+  else if(s.cold>=100 && s.warm<=100) frac = 1 - s.warm / 200;
+  else frac = 0.5;
+  document.getElementById('ctThumb').style.left = (frac*100)+'%';
+
+  document.getElementById('rgbR').value = s.rgb_r;
+  document.getElementById('rgbRVal').textContent = s.rgb_r;
+  document.getElementById('rgbG').value = s.rgb_g;
+  document.getElementById('rgbGVal').textContent = s.rgb_g;
+  document.getElementById('rgbB').value = s.rgb_b;
+  document.getElementById('rgbBVal').textContent = s.rgb_b;
+
+  var hex = '#' + hex2(s.rgb_r) + hex2(s.rgb_g) + hex2(s.rgb_b);
+  document.getElementById('colorPicker').value = hex;
+  document.getElementById('preview').style.background = hex;
+
+  // 模式按钮
+  ['Warm','Cold','Mixed','Rgb','Off'].forEach(function(m){
+    var btn = document.getElementById('mode'+m);
+    var mode = m.toLowerCase();
+    if(btn){
+      var active = (s.mode==mode && (mode!='off' || !s.power)) || (mode=='off' && !s.power);
+      btn.className = 'btn btn-sm mode-btn' + (active ? ' active-mode' : '');
+    }
+  });
+
+  for(var i=0;i<10;i++){
+    var b = document.getElementById('preset'+i);
+    if(b) b.className = 'btn btn-outline-secondary btn-sm w-100 text-start preset-btn' + (s.preset==i ? ' selected' : '');
+  }
+}
+
+function hex2(v){return v.toString(16).padStart(2,'0')}
+
+// ==================== 控制 ====================
+function togglePower(){
+  var cb = document.getElementById('powerCheck');
+  state.power = cb.checked ? 1 : 0;
+  if(state.power && state.mode=='off') state.mode='mixed';
+  send({power:state.power});
+}
+
+function onSlider(el, suffix){
+  var id = el.id;
+  var v = parseInt(el.value);
+  if(id=='brightness') state.brightness = v;
+  else if(id=='rgbR') state.rgb_r = v;
+  else if(id=='rgbG') state.rgb_g = v;
+  else if(id=='rgbB') state.rgb_b = v;
+  document.getElementById(id+'Val').textContent = el.value + suffix;
+  debounceSendSliders();
+}
+
+function onColorPicker(){
+  var v = document.getElementById('colorPicker').value;
+  var r = parseInt(v.substr(1,2),16), g = parseInt(v.substr(3,2),16), b = parseInt(v.substr(5,2),16);
+  document.getElementById('rgbR').value = r; document.getElementById('rgbRVal').textContent = r;
+  document.getElementById('rgbG').value = g; document.getElementById('rgbGVal').textContent = g;
+  document.getElementById('rgbB').value = b; document.getElementById('rgbBVal').textContent = b;
+  document.getElementById('preview').style.background = v;
+  state.rgb_r = r; state.rgb_g = g; state.rgb_b = b;
+  sendCurrentState();
+}
+
+function setMode(m){
+  state.mode = m;
+  if(m=='off'){ state.power = 0; }
+  else { state.power = 1; }
+  if(m=='warm'){ state.warm=100; state.cold=0; }
+  else if(m=='cold'){ state.warm=0; state.cold=100; }
+  else if(m=='mixed'){ state.warm=100; state.cold=100; }
+  sendCurrentState();
+}
+
+function setPreset(i){
+  state.preset = i;
+  state.mode = 'rgb';
+  state.power = 1;
+  send({preset:i, mode:'rgb', power:1});
+}
+
+// ==================== 发送 ====================
+var sendTimer = null;
+function debounceSendSliders(){
+  if(sendTimer) clearTimeout(sendTimer);
+  sendTimer = setTimeout(sendSliders, 80);
+}
+
+function sendSliders(){
+  var p = [];
+  p.push('brightness='+document.getElementById('brightness').value);
+  p.push('warm='+state.warm);
+  p.push('cold='+state.cold);
+  p.push('rgbR='+document.getElementById('rgbR').value);
+  p.push('rgbG='+document.getElementById('rgbG').value);
+  p.push('rgbB='+document.getElementById('rgbB').value);
+  p.push('mode='+state.mode);
+  p.push('power='+state.power);
+  sendRaw(p.join('&'));
+}
+
+function sendCurrentState(){
+  var params = [];
+  params.push('power='+state.power);
+  params.push('brightness='+document.getElementById('brightness').value);
+  params.push('warm='+state.warm);
+  params.push('cold='+state.cold);
+  params.push('rgbR='+document.getElementById('rgbR').value);
+  params.push('rgbG='+document.getElementById('rgbG').value);
+  params.push('rgbB='+document.getElementById('rgbB').value);
+  params.push('mode='+state.mode);
+  sendRaw(params.join('&'));
+}
+
+function send(obj){
+  var params = [];
+  for(var k in obj) params.push(k+'='+obj[k]);
+  sendRaw(params.join('&'));
+}
+
+function sendRaw(body){
+  fetch('http://'+ESP_IP+'/api/set',{method:'POST',body:body})
+    .then(function(r){return r.json()})
+    .then(updateUI)
+    .catch(function(e){console.log('send err:',e)});
+}
+
+// ==================== 启动 ====================
+doConnect();
+</script>
+</body>
+</html>
