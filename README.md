@@ -112,6 +112,3 @@ asyncio 并发任务：
 | `sync_characteristics()` | 1s | 同步 LED.state 到 BLE 特征值 |
 | `start_server()` | 事件驱动 | HTTP 异步服务器 |
 
-## License
-
-MIT
